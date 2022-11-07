@@ -1,7 +1,7 @@
-let discs = Array;
-let player1 = "discRed";
-let player2 = "discGreen";
-let isPlayer1 = true;
+var discs = Array;
+var player1 = "discRed";
+var player2 = "discGreen";
+var isPlayer1 = true;
 
 function bodyOnLoad() {
 
@@ -9,37 +9,94 @@ function bodyOnLoad() {
 
     for (var i = 0; i < discs.length; i++) {
         
-        discs[i].addEventListener("mouseover", mouseOverDisc);
-        discs[i].addEventListener("mouseout", mouseOutDisc);
-        discs[i].addEventListener("click", clickDisc);
+        discs[i].addEventListener("mouseover", hoverOverDisc);
+        discs[i].addEventListener("mouseout", hoverOutDisc);
+        discs[i].addEventListener("click", selectDisc);
     }
 }
 
-function mouseOverDisc() {
+function isSelected(disc) {
 
-    let colour = player2;
+    return disc.classList.contains(player1) || disc.classList.contains(player2);
+}
+
+function getColour() {
 
     if (isPlayer1) {
 
-        colour = player1;
+        return player1;
     }
 
-    this.classList.add(colour);
+    return player2;
 }
 
-function mouseOutDisc() {
+function getLowestDisc(disc) {
 
-    let colour = player2;
+    var column = disc.id.charAt(4);
+    var row = 8;
+    var lowestDisc = null;
 
-    if (isPlayer1) {
+    for (var i = 0; i < discs.length; i++) {
 
-        colour = player1;
+        var discColumn = parseInt(discs[i].id.charAt(4));
+        var discRow = parseInt(discs[i].id.charAt(5));
+
+        if (discColumn == column && discRow < row && !isSelected(discs[i])) {
+
+            row = discRow;
+            lowestDisc = discs[i];
+        }
     }
 
-    this.classList.remove(colour);
+    return lowestDisc;
 }
 
-function clickDisc() {
+function hoverOverDisc() {
 
-    isPlayer1 = !isPlayer1;
+    if (isSelected(this)) {
+
+        return;
+    }
+
+    var colour = getColour();
+    var disc = getLowestDisc(this);
+    
+    if (disc) {
+    
+        disc.classList.add(colour + "Hover");
+    }
+}
+
+function hoverOutDisc() {
+
+    if (isSelected(this)) {
+
+        return;
+    }
+
+    var colour = getColour();
+    var disc = getLowestDisc(this);
+
+    if (disc) {
+    
+        disc.classList.remove(colour + "Hover");
+    }
+}
+
+function selectDisc() {
+
+    if (isSelected(this)) {
+
+        return;
+    }
+
+    var colour = getColour();
+    var disc = getLowestDisc(this);
+
+    if (disc) {
+    
+        disc.classList.remove(colour + "Hover");
+        disc.classList.add(colour);
+        isPlayer1 = !isPlayer1;
+    }
 }

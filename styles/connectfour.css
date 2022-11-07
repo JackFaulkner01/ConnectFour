@@ -58,8 +58,18 @@ p {
     background-color: #E94744;
 }
 
+.discRedHover {
+    background-color: #E94744;
+    opacity: 0.58;
+}
+
 .discGreen {
     background-color: #00D980;
+}
+
+.discGreenHover {
+    background-color: #00D980;
+    opacity: 0.58;
 }
 
 .discBlue {
