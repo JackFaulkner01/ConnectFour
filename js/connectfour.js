@@ -60,13 +60,16 @@ function selectDisc() {
     if (disc) {
         disc.classList.remove(colour + "Hover");
         disc.classList.add(colour);
-        checkWon(disc);
-        
-        if (isPlayer1) {
-            isPlayer1 = false;
-        } else {
-            isPlayer1 = true;
+
+        for (var column = 0; column < 7; column++) {
+            for (var row = 0; row < 6; row++) {
+                if (discs[row][column].classList.contains(getColour())) {
+                    checkWon(discs[row][column]);
+                }
+            }
         }
+        
+        isPlayer1 = !isPlayer1;
     }
 }
 
@@ -111,13 +114,7 @@ function checkWon(disc) {
 
     for (var i = 0; i < allSteps.length; i++) {
         if (scan(disc, allSteps[i])) {
-            for (var column = 0; column < 7; column++) {
-                for (var row = 0; row < 6; row++) {
-                    discs[row][column].classList.remove(getNotColour());
-                    discs[row][column].classList.add(getColour());
-                }
-            }
-
+            showWon();
             gameOver = true;
             return;
         }
@@ -145,6 +142,15 @@ function scan(disc, step) {
             }
         } else {
             return false;
+        }
+    }
+}
+
+function showWon() {
+    for (var column = 0; column < 7; column++) {
+        for (var row = 0; row < 6; row++) {
+            discs[row][column].classList.remove(getNotColour());
+            discs[row][column].classList.add(getColour());
         }
     }
 }
