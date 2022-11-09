@@ -7,11 +7,15 @@ var discs = [[0, 0, 0, 0, 0, 0, 0],
 var player1 = "discRed";
 var player2 = "discGreen";
 var isPlayer1 = true;
+var isUser = true;
+var ai;
 var gameOver = false;
 
 function bodyOnLoad() {
     var temps = document.getElementsByClassName("disc");
     var tempColumn, tempRow;
+    
+    ai = document.getElementById("ai");
 
     for (var i = 0; i < temps.length; i++) {
         temps[i].addEventListener("mouseover", hoverOverDisc);
@@ -24,7 +28,7 @@ function bodyOnLoad() {
 }
 
 function hoverOverDisc() {
-    if (gameOver || isSelected(this)) {
+    if (gameOver || !isUser || isSelected(this)) {
         return;
     }
 
@@ -37,7 +41,7 @@ function hoverOverDisc() {
 }
 
 function hoverOutDisc() {
-    if (gameOver || isSelected(this)) {
+    if (gameOver || !isUser || isSelected(this)) {
         return;
     }
 
@@ -50,7 +54,7 @@ function hoverOutDisc() {
 }
 
 function selectDisc() {
-    if (gameOver || isSelected(this)) {
+    if (gameOver || !isUser || isSelected(this)) {
         return;
     }
 
@@ -69,6 +73,12 @@ function selectDisc() {
             }
         }
         
+        isPlayer1 = !isPlayer1;
+        switch (ai.selectedIndex) {
+            case 0:
+                randomAI();
+                break;
+        }
         isPlayer1 = !isPlayer1;
     }
 }
@@ -151,6 +161,34 @@ function showWon() {
         for (var row = 0; row < 6; row++) {
             discs[row][column].classList.remove(getNotColour());
             discs[row][column].classList.add(getColour());
+        }
+    }
+}
+
+function randomAI() {
+    if (gameOver) {
+        return;
+    }
+
+    var random, disc;
+    var valid = false;
+    var colour = getColour();
+
+    while (!valid) {
+        random = Math.floor(Math.random() * 7);
+        disc = getLowestDisc(discs[5][random]);
+
+        if (disc) {
+            disc.classList.add(colour);
+            valid = true;
+    
+            for (var column = 0; column < 7; column++) {
+                for (var row = 0; row < 6; row++) {
+                    if (discs[row][column].classList.contains(getColour())) {
+                        checkWon(discs[row][column]);
+                    }
+                }
+            }
         }
     }
 }

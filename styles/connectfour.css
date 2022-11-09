@@ -22,9 +22,21 @@ p {
     font-size: 40px;
 }
 
+#aiLevel {
+    width: 6%;
+    margin: 32px 0 0 30%;
+    float: left;
+}
+
+#ai {
+    width: 6%;
+    margin-top: 32px;
+    float: left;
+}
+
 #connectfourDiv {
     width: 40%;
-    margin: 96px 30% 0 30%;
+    margin: 32px 30% 0 30%;
     padding: 24px 0;
     float: left;
     background-color: #666666;
