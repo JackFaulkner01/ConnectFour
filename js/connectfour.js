@@ -17,13 +17,15 @@ var player2 = "discGreen";
 var isPlayer1 = true;
 var isUser = true;
 var ai;
+var aiDepth;
 var gameOver = false;
 
 function bodyOnLoad() {
     var temps = document.getElementsByClassName("disc");
     var tempColumn, tempRow;
     
-    ai = document.getElementById("ai");
+    ai = document.getElementById("aiLevelSelect");
+    aiDepth = document.getElementById("aiDepthSelect");
 
     for (var i = 0; i < temps.length; i++) {
         tempColumn = parseInt(temps[i].id.charAt(ID_COLUMN)) - 1;
@@ -82,16 +84,10 @@ function selectDisc() {
                 randomAI();
                 break;
             case 1:
-                badMinMaxAI(1);
+                minimaxAI(0, aiDepth.value);
                 break;
             case 2:
-                badMinMaxAI(2);
-                break;
-            case 3:
-                badMinMaxAI(3);
-                break;
-            case 4:
-                badMinMaxAI(4);
+                minimaxAI(1, aiDepth.value);
                 break;
         }
 
@@ -257,7 +253,7 @@ function randomAI() {
     }
 }
 
-function badMinMaxAI(minMaxDepth) {
+function minimaxAI(version, depth) {
     if (gameOver) {
         return;
     }
@@ -274,8 +270,12 @@ function badMinMaxAI(minMaxDepth) {
             continue;
         }
 
-        score = minSearch(disc, minMaxDepth);
-
+        if (version == 0) {
+            score = prettyBadMinSearch(disc, depth);
+        } else if (version == 1) {
+            score = notTooBadMinSearch(disc, depth);
+        }
+        
         if (bestScore < score) {
             bestScore = score;
             bestDiscs = [disc];
@@ -291,16 +291,22 @@ function badMinMaxAI(minMaxDepth) {
     }
 }
 
-function badMaxSearch(disc, depth) {
+/*
+*
+* Start: Pretty bad minimax
+*
+*/
+function prettyBadMaxSearch(disc, depth) {
+    // Make user move
     disc.addClass(getColour());
     var current = checkWon();
 
     if (depth == 0 || current == CONNECT_COUNT) {
         disc.removeClass(getColour());
-        return badMinScore(current);
+        return prettyBadMinScore(current);
     }
 
-    var current;
+    // Now loop each AI move
     var score;
     var bestScore = -1000;
     var player = isPlayer1;
@@ -313,7 +319,7 @@ function badMaxSearch(disc, depth) {
         }
 
         isPlayer1 = !player;
-        score = badMinSearch(current, depth - 1);
+        score = prettyBadMinSearch(current, depth - 1);
 
         if (bestScore < score) {
             bestScore = score;
@@ -326,15 +332,18 @@ function badMaxSearch(disc, depth) {
     return bestScore;
 }
 
-function badMinSearch(disc, depth) {
+function prettyBadMinSearch(disc, depth) {
+    // Make AI move
     disc.addClass(getColour());
     var current = checkWon();
 
     if (depth == 0 || current == CONNECT_COUNT) {
         disc.removeClass(getColour());
-        return badMaxScore(current);
+        return prettyBadMaxScore(current);
     }
 
+    // Now loop each user move
+    var score;
     var worstScore = 1000;
     var player = isPlayer1;
 
@@ -346,7 +355,7 @@ function badMinSearch(disc, depth) {
         }
 
         isPlayer1 = !player;
-        score = badMaxSearch(current, depth - 1);
+        score = prettyBadMaxSearch(current, depth - 1);
 
         if (worstScore > score) {
             worstScore = score;
@@ -359,7 +368,7 @@ function badMinSearch(disc, depth) {
     return worstScore;
 }
 
-function badMaxScore(count) {
+function prettyBadMaxScore(count) {
     if (count == CONNECT_COUNT) {
         return 100;
     }
@@ -375,7 +384,7 @@ function badMaxScore(count) {
     return 0;
 }
 
-function badMinScore(count) {
+function prettyBadMinScore(count) {
     if (count == CONNECT_COUNT) {
         return -100;
     }
@@ -390,3 +399,133 @@ function badMinScore(count) {
     
     return 0;
 }
+/*
+*
+* End: Pretty bad minimax
+*
+*/
+
+/*
+*
+* Start: Not too bad minimax
+*
+*/
+function notTooBadMaxSearch(disc, depth) {
+    // Make user move
+    disc.addClass(getColour());
+    var current = checkWon();
+
+    if (current == CONNECT_COUNT) {
+        disc.removeClass(getColour());
+        return -1000;
+    }
+
+    if (depth == 0) {
+        disc.removeClass(getColour());
+        return notTooBadMinScore(current);
+    }
+
+    // Now loop each AI move
+    var score;
+    var bestScore = -1000;
+    var player = isPlayer1;
+
+    for (var column = 0; column < COLUMN_LIMIT; column++) {
+        current = getLowestDisc(board[BOARD_ROW_LIMIT][column].disc);
+
+        if (!current) {
+            continue;
+        }
+
+        isPlayer1 = !player;
+        score = notTooBadMinSearch(current, depth - 1);
+
+        if (bestScore < score) {
+            bestScore = score;
+        }
+
+        isPlayer1 = player;
+    }
+
+    disc.removeClass(getColour());
+    return bestScore;
+}
+
+function notTooBadMinSearch(disc, depth) {
+    // Make AI move
+    disc.addClass(getColour());
+    var current = checkWon();
+
+    if (current == CONNECT_COUNT) {
+        disc.removeClass(getColour());
+        return 1000;
+    }
+
+    if (depth == 0) {
+        disc.removeClass(getColour());
+        return notTooBadMaxScore(current);
+    }
+
+    // Now loop each user move
+    var score;
+    var worstScore = 1000;
+    var player = isPlayer1;
+
+    for (var column = 0; column < COLUMN_LIMIT; column++) {
+        current = getLowestDisc(board[BOARD_ROW_LIMIT][column].disc);
+
+        if (!current) {
+            continue;
+        }
+
+        isPlayer1 = !player;
+        score = notTooBadMaxSearch(current, depth - 1);
+
+        if (worstScore > score) {
+            worstScore = score;
+        }
+
+        isPlayer1 = player;
+    }
+
+    disc.removeClass(getColour());
+    return worstScore;
+}
+
+// Score based on entire board
+function notTooBadMaxScore() {
+    if (count == CONNECT_COUNT) {
+        return 100;
+    }
+
+    if (count == CONNECT_COUNT - 1) {
+        return 5;
+    }
+
+    if (count == CONNECT_COUNT - 2) {
+        return 2;
+    }
+    
+    return 0;
+}
+
+function notTooBadMinScore() {
+    if (count == CONNECT_COUNT) {
+        return -100;
+    }
+
+    if (count == CONNECT_COUNT - 1) {
+        return -5;
+    }
+
+    if (count == CONNECT_COUNT - 2) {
+        return -2;
+    }
+    
+    return 0;
+}
+/*
+*
+* End: Not too bad minimax
+*
+*/

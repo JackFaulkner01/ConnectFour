@@ -23,14 +23,22 @@ p {
 }
 
 #aiLevel {
-    width: 5%;
     margin: 32px 0 0 30%;
     float: left;
 }
 
-#ai {
-    width: 35%;
-    margin-top: 32px;
+#aiLevelSelect {
+    margin: 32px 0 0 8px;
+    float: left;
+}
+
+#aiDepth {
+    margin: 32px 0 0 32px;
+    float: left;
+}
+
+#aiDepthSelect {
+    margin: 32px 0 0 8px;
     float: left;
 }
 
