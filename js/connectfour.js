@@ -1,4 +1,4 @@
-var discs = [[0, 0, 0, 0, 0, 0, 0],
+var board = [[0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0],
@@ -18,74 +18,99 @@ function bodyOnLoad() {
     ai = document.getElementById("ai");
 
     for (var i = 0; i < temps.length; i++) {
+        tempColumn = parseInt(temps[i].id.charAt(4)) - 1;
+        tempRow = parseInt(temps[i].id.charAt(5)) - 1;
+        board[tempRow][tempColumn] = new Disc(temps[i]);
+
         temps[i].addEventListener("mouseover", hoverOverDisc);
         temps[i].addEventListener("mouseout", hoverOutDisc);
         temps[i].addEventListener("click", selectDisc);
-        tempColumn = parseInt(temps[i].id.charAt(4)) - 1;
-        tempRow = parseInt(temps[i].id.charAt(5)) - 1;
-        discs[tempRow][tempColumn] = temps[i];
     }
 }
 
 function hoverOverDisc() {
-    if (gameOver || !isUser || isSelected(this)) {
+    if (gameOver || !isUser) {
         return;
     }
 
-    var colour = getColour();
     var disc = getLowestDisc(this);
     
     if (disc) {
-        disc.classList.add(colour + "Hover");
+        disc.addClass(getColour() + "Hover");
     }
 }
 
 function hoverOutDisc() {
-    if (gameOver || !isUser || isSelected(this)) {
+    if (gameOver || !isUser) {
         return;
     }
 
-    var colour = getColour();
     var disc = getLowestDisc(this);
 
     if (disc) {
-        disc.classList.remove(colour + "Hover");
+        disc.removeClass(getColour() + "Hover");
     }
 }
 
 function selectDisc() {
-    if (gameOver || !isUser || isSelected(this)) {
+    if (gameOver || !isUser) {
         return;
     }
 
-    var colour = getColour();
     var disc = getLowestDisc(this);
 
     if (disc) {
-        disc.classList.remove(colour + "Hover");
-        disc.classList.add(colour);
+        disc.removeClass(getColour() + "Hover");
+        disc.addClass(getColour());
 
-        for (var column = 0; column < 7; column++) {
-            for (var row = 0; row < 6; row++) {
-                if (discs[row][column].classList.contains(getColour())) {
-                    checkWon(discs[row][column]);
-                }
-            }
+        if (checkWon()) {
+            showWon();
         }
-        
+
         isPlayer1 = !isPlayer1;
+
         switch (ai.selectedIndex) {
             case 0:
                 randomAI();
                 break;
+            case 1:
+                minMaxAI();
+                break;
         }
+
         isPlayer1 = !isPlayer1;
     }
 }
 
-function isSelected(disc) {
-    return disc.classList.contains(player1) || disc.classList.contains(player2);
-}
+class Disc {
+    constructor(disc) {
+        this.disc = disc;
+    }
+
+    isSelected() {
+        return this.disc.classList.contains(player1) || this.disc.classList.contains(player2);
+    }
+
+    getColumn() {
+        return this.disc.id.charAt(4) - 1;
+    }
+
+    getRow() {
+        return this.disc.id.charAt(5) - 1;
+    }
+
+    addClass(cssClass) {
+        this.disc.classList.add(cssClass);
+    }
+
+    removeClass(cssClass) {
+        this.disc.classList.remove(cssClass);
+    }
+
+    hasClass(cssClass) {
+        return this.disc.classList.contains(cssClass);
+    }
+  }
 
 function getColour() {
     if (isPlayer1) {
@@ -104,14 +129,12 @@ function getNotColour() {
 }
 
 function getLowestDisc(disc) {
-    var column = disc.id.charAt(4) - 1;
-    var row = 6;
+    var column = parseInt(disc.id.charAt(4)) - 1;
     var lowestDisc = null;
 
     for (var i = 0; i < 6; i++) {
-        if (i < row && !isSelected(discs[i][column])) {
-            row = i;
-            lowestDisc = discs[i][column];
+        if (!board[i][column].isSelected()) {
+            lowestDisc = board[i][column];
             break;
         }
     }
@@ -119,21 +142,35 @@ function getLowestDisc(disc) {
     return lowestDisc;
 }
 
-function checkWon(disc) {
-    var allSteps = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
-
-    for (var i = 0; i < allSteps.length; i++) {
-        if (scan(disc, allSteps[i])) {
-            showWon();
-            gameOver = true;
-            return;
+function checkWon() {
+    for (var column = 0; column < 7; column++) {
+        for (var row = 0; row < 6; row++) {
+            if (checkDiscWon(board[row][column])) {
+                return true;
+            }
         }
     }
+
+    return false;
+}
+
+function checkDiscWon(disc) {
+    var allSteps = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+
+    if (disc.hasClass(getColour())) {
+        for (var i = 0; i < allSteps.length; i++) {
+            if (scan(disc, allSteps[i])) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 function scan(disc, step) {
-    var column = disc.id.charAt(4) - 1;
-    var row = disc.id.charAt(5) - 1;
+    var column = disc.getColumn();
+    var row = disc.getRow();
     var count = 1;
 
     while (true) {
@@ -143,8 +180,8 @@ function scan(disc, step) {
         if (column < 0 || column > 6 || row < 0 || row > 5) {
             return false;
         }
-        console.log(column + "," + row);
-        if (discs[row][column].classList.contains(getColour())) {
+        
+        if (board[row][column].hasClass(getColour())) {
             count++;
 
             if (count == 4) {
@@ -157,12 +194,14 @@ function scan(disc, step) {
 }
 
 function showWon() {
-    for (var column = 0; column < 7; column++) {
-        for (var row = 0; row < 6; row++) {
-            discs[row][column].classList.remove(getNotColour());
-            discs[row][column].classList.add(getColour());
-        }
-    }
+    gameOver = true;
+
+    // for (var column = 0; column < 7; column++) {
+    //     for (var row = 0; row < 6; row++) {
+    //         board[row][column].removeClass(getNotColour());
+    //         board[row][column].addClass(getColour());
+    //     }
+    // }
 }
 
 function randomAI() {
@@ -172,23 +211,68 @@ function randomAI() {
 
     var random, disc;
     var valid = false;
-    var colour = getColour();
 
     while (!valid) {
         random = Math.floor(Math.random() * 7);
-        disc = getLowestDisc(discs[5][random]);
+        disc = getLowestDisc(board[5][random].disc);
 
         if (disc) {
-            disc.classList.add(colour);
+            disc.addClass(getColour());
             valid = true;
-    
-            for (var column = 0; column < 7; column++) {
-                for (var row = 0; row < 6; row++) {
-                    if (discs[row][column].classList.contains(getColour())) {
-                        checkWon(discs[row][column]);
-                    }
-                }
+            
+            if (checkWon()) {
+                showWon();
             }
         }
     }
+}
+
+function minMaxAI() {
+    if (gameOver) {
+        return;
+    }
+
+    var disc;
+    var player = isPlayer1;
+
+    for (var column = 0; column < 7; column++) {
+        disc = getLowestDisc(board[5][column]);
+        
+        if (!disc) {
+            continue;
+        }
+
+        disc.addClass(getColour());
+        minMaxSearch(disc, 0, 1);
+        disc.removeClass(getColour());
+        isPlayer1 = player;
+    }
+}
+
+function minMaxSearch(disc, score, depth) {
+    if (depth == 0) {
+        return score;
+    }
+
+    var current;
+    var bestScore = 0;
+    
+    isPlayer1 = !isPlayer1;
+    var player = isPlayer1;
+
+    for (var column = 0; column < 7; column++) {
+        current = getLowestDisc(board[5][column]);
+        current.addClass(getColour());
+        
+        if (checkWon()) {
+            if (bestScore < score + 10) {
+                bestScore = score + 10;
+            }
+        }
+
+        current.removeClass(getColour());
+        isPlayer1 = player;
+    }
+
+    return bestScore;
 }
