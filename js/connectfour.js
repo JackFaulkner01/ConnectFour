@@ -1,3 +1,11 @@
+const ID_COLUMN = 4;
+const ID_ROW = 5;
+const COLUMN_LIMIT = 7;
+const ROW_LIMIT = 6;
+const BOARD_COLUMN_LIMIT = 6;
+const BOARD_ROW_LIMIT = 5;
+const CONNECT_COUNT = 4;
+
 var board = [[0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0],
@@ -18,8 +26,8 @@ function bodyOnLoad() {
     ai = document.getElementById("ai");
 
     for (var i = 0; i < temps.length; i++) {
-        tempColumn = parseInt(temps[i].id.charAt(4)) - 1;
-        tempRow = parseInt(temps[i].id.charAt(5)) - 1;
+        tempColumn = parseInt(temps[i].id.charAt(ID_COLUMN)) - 1;
+        tempRow = parseInt(temps[i].id.charAt(ID_ROW)) - 1;
         board[tempRow][tempColumn] = new Disc(temps[i]);
 
         temps[i].addEventListener("mouseover", hoverOverDisc);
@@ -63,7 +71,7 @@ function selectDisc() {
         disc.removeClass(getColour() + "Hover");
         disc.addClass(getColour());
 
-        if (checkWon()) {
+        if (checkWon() == CONNECT_COUNT) {
             showWon();
         }
 
@@ -74,7 +82,16 @@ function selectDisc() {
                 randomAI();
                 break;
             case 1:
-                minMaxAI();
+                badMinMaxAI(1);
+                break;
+            case 2:
+                badMinMaxAI(2);
+                break;
+            case 3:
+                badMinMaxAI(3);
+                break;
+            case 4:
+                badMinMaxAI(4);
                 break;
         }
 
@@ -92,11 +109,11 @@ class Disc {
     }
 
     getColumn() {
-        return this.disc.id.charAt(4) - 1;
+        return this.disc.id.charAt(ID_COLUMN) - 1;
     }
 
     getRow() {
-        return this.disc.id.charAt(5) - 1;
+        return this.disc.id.charAt(ID_ROW) - 1;
     }
 
     addClass(cssClass) {
@@ -129,10 +146,10 @@ function getNotColour() {
 }
 
 function getLowestDisc(disc) {
-    var column = parseInt(disc.id.charAt(4)) - 1;
+    var column = parseInt(disc.id.charAt(ID_COLUMN)) - 1;
     var lowestDisc = null;
 
-    for (var i = 0; i < 6; i++) {
+    for (var i = 0; i < ROW_LIMIT; i++) {
         if (!board[i][column].isSelected()) {
             lowestDisc = board[i][column];
             break;
@@ -143,29 +160,46 @@ function getLowestDisc(disc) {
 }
 
 function checkWon() {
-    for (var column = 0; column < 7; column++) {
-        for (var row = 0; row < 6; row++) {
-            if (checkDiscWon(board[row][column])) {
-                return true;
+    var bestCount = 0;
+    var count;
+
+    for (var column = 0; column < COLUMN_LIMIT; column++) {
+        for (var row = 0; row < ROW_LIMIT; row++) {
+            count = checkDiscWon(board[row][column]);
+
+            if (bestCount < count) {
+                bestCount = count;
+
+                if (bestCount == CONNECT_COUNT) {
+                    return bestCount;
+                }
             }
         }
     }
 
-    return false;
+    return bestCount;
 }
 
 function checkDiscWon(disc) {
     var allSteps = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+    var bestCount = 0;
+    var count;
 
     if (disc.hasClass(getColour())) {
         for (var i = 0; i < allSteps.length; i++) {
-            if (scan(disc, allSteps[i])) {
-                return true;
+            count = scan(disc, allSteps[i]);
+
+            if (bestCount < count) {
+                bestCount = count;
+
+                if (bestCount == CONNECT_COUNT) {
+                    return bestCount;
+                }
             }
         }
     }
 
-    return false;
+    return bestCount;
 }
 
 function scan(disc, step) {
@@ -177,31 +211,27 @@ function scan(disc, step) {
         column += step[0];
         row += step[1];
 
-        if (column < 0 || column > 6 || row < 0 || row > 5) {
-            return false;
+        if (column < 0 || column > BOARD_COLUMN_LIMIT || row < 0 || row > BOARD_ROW_LIMIT) {
+            break;
         }
         
         if (board[row][column].hasClass(getColour())) {
             count++;
 
-            if (count == 4) {
-                return true;
+            if (count == CONNECT_COUNT) {
+                break;
             }
         } else {
-            return false;
+            break;
         }
     }
+
+    return count;
 }
 
 function showWon() {
     gameOver = true;
-
-    // for (var column = 0; column < 7; column++) {
-    //     for (var row = 0; row < 6; row++) {
-    //         board[row][column].removeClass(getNotColour());
-    //         board[row][column].addClass(getColour());
-    //     }
-    // }
+    document.body.classList.add(getColour());
 }
 
 function randomAI() {
@@ -213,66 +243,150 @@ function randomAI() {
     var valid = false;
 
     while (!valid) {
-        random = Math.floor(Math.random() * 7);
-        disc = getLowestDisc(board[5][random].disc);
+        random = Math.floor(Math.random() * COLUMN_LIMIT);
+        disc = getLowestDisc(board[BOARD_ROW_LIMIT][random].disc);
 
         if (disc) {
             disc.addClass(getColour());
             valid = true;
             
-            if (checkWon()) {
+            if (checkWon() == CONNECT_COUNT) {
                 showWon();
             }
         }
     }
 }
 
-function minMaxAI() {
+function badMinMaxAI(minMaxDepth) {
     if (gameOver) {
         return;
     }
 
     var disc;
-    var player = isPlayer1;
+    var score;
+    var bestScore = -1000;
+    var bestDiscs = [];
 
-    for (var column = 0; column < 7; column++) {
-        disc = getLowestDisc(board[5][column]);
-        
+    for (var column = 0; column < COLUMN_LIMIT; column++) {
+        disc = getLowestDisc(board[BOARD_ROW_LIMIT][column].disc);
+
         if (!disc) {
             continue;
         }
 
-        disc.addClass(getColour());
-        minMaxSearch(disc, 0, 1);
-        disc.removeClass(getColour());
-        isPlayer1 = player;
+        score = minSearch(disc, minMaxDepth);
+
+        if (bestScore < score) {
+            bestScore = score;
+            bestDiscs = [disc];
+        } else if (bestScore == score) {
+            bestDiscs.push(disc);
+        }
+    }
+
+    bestDiscs[Math.floor(Math.random() * bestDiscs.length)].addClass(getColour());
+
+    if (checkWon() == CONNECT_COUNT) {
+        showWon();
     }
 }
 
-function minMaxSearch(disc, score, depth) {
-    if (depth == 0) {
-        return score;
+function badMaxSearch(disc, depth) {
+    disc.addClass(getColour());
+    var current = checkWon();
+
+    if (depth == 0 || current == CONNECT_COUNT) {
+        disc.removeClass(getColour());
+        return badMinScore(current);
     }
 
     var current;
-    var bestScore = 0;
-    
-    isPlayer1 = !isPlayer1;
+    var score;
+    var bestScore = -1000;
     var player = isPlayer1;
 
-    for (var column = 0; column < 7; column++) {
-        current = getLowestDisc(board[5][column]);
-        current.addClass(getColour());
-        
-        if (checkWon()) {
-            if (bestScore < score + 10) {
-                bestScore = score + 10;
-            }
+    for (var column = 0; column < COLUMN_LIMIT; column++) {
+        current = getLowestDisc(board[BOARD_ROW_LIMIT][column].disc);
+
+        if (!current) {
+            continue;
         }
 
-        current.removeClass(getColour());
+        isPlayer1 = !player;
+        score = badMinSearch(current, depth - 1);
+
+        if (bestScore < score) {
+            bestScore = score;
+        }
+
         isPlayer1 = player;
     }
 
+    disc.removeClass(getColour());
     return bestScore;
+}
+
+function badMinSearch(disc, depth) {
+    disc.addClass(getColour());
+    var current = checkWon();
+
+    if (depth == 0 || current == CONNECT_COUNT) {
+        disc.removeClass(getColour());
+        return badMaxScore(current);
+    }
+
+    var worstScore = 1000;
+    var player = isPlayer1;
+
+    for (var column = 0; column < COLUMN_LIMIT; column++) {
+        current = getLowestDisc(board[BOARD_ROW_LIMIT][column].disc);
+
+        if (!current) {
+            continue;
+        }
+
+        isPlayer1 = !player;
+        score = badMaxSearch(current, depth - 1);
+
+        if (worstScore > score) {
+            worstScore = score;
+        }
+
+        isPlayer1 = player;
+    }
+
+    disc.removeClass(getColour());
+    return worstScore;
+}
+
+function badMaxScore(count) {
+    if (count == CONNECT_COUNT) {
+        return 100;
+    }
+
+    if (count == CONNECT_COUNT - 1) {
+        return 5;
+    }
+
+    if (count == CONNECT_COUNT - 2) {
+        return 2;
+    }
+    
+    return 0;
+}
+
+function badMinScore(count) {
+    if (count == CONNECT_COUNT) {
+        return -100;
+    }
+
+    if (count == CONNECT_COUNT - 1) {
+        return -5;
+    }
+
+    if (count == CONNECT_COUNT - 2) {
+        return -2;
+    }
+    
+    return 0;
 }

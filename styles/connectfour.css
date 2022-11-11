@@ -23,13 +23,13 @@ p {
 }
 
 #aiLevel {
-    width: 2%;
+    width: 5%;
     margin: 32px 0 0 30%;
     float: left;
 }
 
 #ai {
-    width: 6%;
+    width: 35%;
     margin-top: 32px;
     float: left;
 }
@@ -55,7 +55,6 @@ p {
     float: left;
     background-color: #333333;
     border-radius: 50%;
-    display: inline-block;
 }
 
 .leftDisc {
