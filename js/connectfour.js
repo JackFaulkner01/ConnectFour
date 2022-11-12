@@ -260,7 +260,7 @@ function minimaxAI(version, depth) {
 
     var disc;
     var score;
-    var bestScore = -1000;
+    var bestScore = -10000;
     var bestDiscs = [];
 
     for (var column = 0; column < COLUMN_LIMIT; column++) {
@@ -273,7 +273,7 @@ function minimaxAI(version, depth) {
         if (version == 0) {
             score = prettyBadMinSearch(disc, depth);
         } else if (version == 1) {
-            score = notTooBadMinSearch(disc, depth);
+            score = decentMinSearch(disc, depth);
         }
         
         if (bestScore < score) {
@@ -407,22 +407,22 @@ function prettyBadMinScore(count) {
 
 /*
 *
-* Start: Not too bad minimax
+* Start: Decent minimax
 *
 */
-function notTooBadMaxSearch(disc, depth) {
+function decentMaxSearch(disc, depth) {
     // Make user move
     disc.addClass(getColour());
     var current = checkWon();
 
     if (current == CONNECT_COUNT) {
         disc.removeClass(getColour());
-        return -1000;
+        return -1000 - depth;
     }
 
     if (depth == 0) {
         disc.removeClass(getColour());
-        return notTooBadMinScore(current);
+        return decentScore(current);
     }
 
     // Now loop each AI move
@@ -438,7 +438,7 @@ function notTooBadMaxSearch(disc, depth) {
         }
 
         isPlayer1 = !player;
-        score = notTooBadMinSearch(current, depth - 1);
+        score = decentMinSearch(current, depth - 1);
 
         if (bestScore < score) {
             bestScore = score;
@@ -451,19 +451,19 @@ function notTooBadMaxSearch(disc, depth) {
     return bestScore;
 }
 
-function notTooBadMinSearch(disc, depth) {
+function decentMinSearch(disc, depth) {
     // Make AI move
     disc.addClass(getColour());
     var current = checkWon();
 
     if (current == CONNECT_COUNT) {
         disc.removeClass(getColour());
-        return 1000;
+        return 1000 + depth;
     }
 
     if (depth == 0) {
         disc.removeClass(getColour());
-        return notTooBadMaxScore(current);
+        return decentScore(current);
     }
 
     // Now loop each user move
@@ -479,7 +479,7 @@ function notTooBadMinSearch(disc, depth) {
         }
 
         isPlayer1 = !player;
-        score = notTooBadMaxSearch(current, depth - 1);
+        score = decentMaxSearch(current, depth - 1);
 
         if (worstScore > score) {
             worstScore = score;
@@ -493,7 +493,37 @@ function notTooBadMinSearch(disc, depth) {
 }
 
 // Score based on entire board
-function notTooBadMaxScore() {
+function decentScore() {
+    var score = 0;
+    var disc;
+    var count;
+
+    for (var column = 0; column < COLUMN_LIMIT; column++) {
+        for (var row = 0; row < ROW_LIMIT; row++) {
+            disc = board[row][column];
+
+            if (!disc.isSelected()) {
+                continue;
+            }
+
+            if (disc.hasClass(player1)) {
+                // Make user move
+                isPlayer1 = true;
+                count = checkDiscWon(disc);
+                score -= decentEvaluate(count);
+            } else {
+                // Make AI move
+                isPlayer1 = false;
+                count = checkDiscWon(disc);
+                score += decentEvaluate(count);
+            }
+        }
+    }
+
+    return score;
+}
+
+function decentEvaluate(count) {
     if (count == CONNECT_COUNT) {
         return 100;
     }
@@ -508,24 +538,8 @@ function notTooBadMaxScore() {
     
     return 0;
 }
-
-function notTooBadMinScore() {
-    if (count == CONNECT_COUNT) {
-        return -100;
-    }
-
-    if (count == CONNECT_COUNT - 1) {
-        return -5;
-    }
-
-    if (count == CONNECT_COUNT - 2) {
-        return -2;
-    }
-    
-    return 0;
-}
 /*
 *
-* End: Not too bad minimax
+* End: Decent minimax
 *
 */
